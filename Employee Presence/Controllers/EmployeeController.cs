@@ -1,9 +1,6 @@
-﻿using Azure;
-using Employee_Presence.Data;
+﻿using Employee_Presence.Data;
 using Employee_Presence.Model;
 using Employee_Presence.Model.Dto;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
