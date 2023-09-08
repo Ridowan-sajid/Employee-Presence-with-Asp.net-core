@@ -17,7 +17,6 @@ namespace Employee_Presence.Model.Dto
 
         public int? EmployeeId { get; set; }
         [ForeignKey("EmployeeId")]
-        [ValidateNever]
         public Employee? Employee { get; set; }
     }
 }

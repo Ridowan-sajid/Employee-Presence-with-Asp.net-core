@@ -10,10 +10,13 @@ namespace Employee_Presence.Model
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int EmployeeId { get; set; }
         [Required]
+        [StringLength(20)]
         public string EmployeeName { get; set; }
         [Required]
+        
         public string EmployeeCode { get; set; }
         [Required]
+        [Range(0, 1000000)]
         public double EmployeeSalary { get; set; }
 
         public int? SupervisorId { get; set; }
