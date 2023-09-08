@@ -3,6 +3,7 @@ using Employee_Presence.Data;
 using Employee_Presence.Model;
 using Employee_Presence.Model.Dto;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -34,8 +35,6 @@ namespace Employee_Presence.Controllers
             try
             {
                 List<Employee> empList= _db.Employees.Where(e=>e.EmployeeCode==updateDTO.EmployeeCode && e.EmployeeId != id).ToList();
-                //
-                Console.WriteLine("ssf");
                 if (updateDTO != null && empList.Count == 0)
                 {
                     Employee emp = _db.Employees.AsNoTracking().FirstOrDefault(e=>e.EmployeeId==id);
@@ -56,8 +55,6 @@ namespace Employee_Presence.Controllers
                             SupervisorId=emp.SupervisorId,
                             
                         };
-
-
                         _db.Employees.Update(model);
                         _db.SaveChanges();
                         return Ok(emp);  
@@ -77,63 +74,115 @@ namespace Employee_Presence.Controllers
 
         [HttpGet("GetEmployeeThird")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult<EmployeeDTO> GetEmployee3rd()
         {
-            return Ok(_db.Employees
-                .OrderBy(e => e.EmployeeSalary)
+            try
+            {
+                var result =_db.Employees
+                .OrderByDescending(e => e.EmployeeSalary)
                 .Skip(2)
-                .Take(1));
+                .Take(1);
+                if (result == null)
+                {
+                    return BadRequest();
+                }
+                return Ok(result);
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+            
         }
 
         [HttpGet("HighestSalary")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult<IEnumerable<EmployeeDTO>> HighestSalary()
         {
-            var employees = _db.Employees
-                .OrderByDescending(e => e.EmployeeSalary)
-                .Where(e => e.EmployeeAttendances.Any(a => a.IsPresent==1))
-                .ToList();
 
-            return Ok(employees);
+            try
+            {
+                var employees = _db.Employees
+                .OrderByDescending(e => e.EmployeeSalary)
+                .Where(e => e.EmployeeAttendances.Any(a => a.IsAbsent == 0)).Distinct()
+                .ToList();
+                if (employees == null)
+                {
+                    return BadRequest();
+                }
+
+                return Ok(employees);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+
+            }
+
         }
 
 
         [HttpGet("GetMonthlyAttendance")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult<IEnumerable<EmployeeDTO>> MonthlyAttendance()
         {
-            var result = (from a in _db.Employees
-                          join b in _db.EmployeeAttendances on a.EmployeeId equals b.EmployeeId
-                          select new { a.EmployeeName,PayableSalary=a.EmployeeSalary, b.AttendanceDat, TotalPresent = _db.EmployeeAttendances.Count(e => e.IsPresent == 1 && e.EmployeeId==b.EmployeeId), TotalOffday = _db.EmployeeAttendances.Count(e => e.IsOffDay == 1 && e.EmployeeId == b.EmployeeId), TotalAbsesnt = _db.EmployeeAttendances.Count(e => e.IsAbsent == 1 && e.EmployeeId == b.EmployeeId) }).Distinct().ToList();
-
-            return Ok(result);
+           try {
+                var result = (from a in _db.Employees
+                              join b in _db.EmployeeAttendances on a.EmployeeId equals b.EmployeeId
+                              select new { a.EmployeeName, PayableSalary = a.EmployeeSalary, MonthName = b.AttendanceDat.ToString("MMMM"), TotalPresent = _db.EmployeeAttendances.Count(e => e.IsPresent == 1 && e.EmployeeId == b.EmployeeId), TotalOffday = _db.EmployeeAttendances.Count(e => e.IsOffDay == 1 && e.EmployeeId == b.EmployeeId), TotalAbsesnt = _db.EmployeeAttendances.Count(e => e.IsAbsent == 1 && e.EmployeeId == b.EmployeeId) }).Distinct().ToList();
+                if (result == null)
+                {
+                    return BadRequest();
+                }
+                return Ok(result);
+            }
+            catch (Exception ex) { 
+                return BadRequest(ex.Message); 
+            }    
+            
         }
 
-        [HttpGet("GetHierarchy")]
+        [HttpGet("GetHierarchy/{EmployeeId:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<EmployeeDTO>> GetHierarchy()
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<IEnumerable<EmployeeDTO>> GetHierarchy(int EmployeeId)
         {
-            //var employees = _db.Employees.ToList(); // Retrieve employees from the database
 
-            //foreach (var employee in employees)
-            //{
-            //    if (employee.Supervisor == null)
-            //    {
-            //        return BadRequest();
-            //    }
+            try
+            {
 
-            //    // Get the supervisor of the employee.
-            //    var supervisor = employee.Supervisor;
+                List<string> hierarchy = new List<string>();
+                List<int> ids = new List<int>();
 
-            //    // Get the hierarchy of the supervisor.
-            //    var hierarchy = GetHierarchy(supervisor);
+                var employees = _db.Employees.Where(e => e.EmployeeId == EmployeeId).FirstOrDefault();
+                hierarchy.Add(employees.EmployeeName);
+                ids.Add(employees.EmployeeId);
+                var sup = employees.SupervisorId;
 
-            //    // Add the employee to the hierarchy.
-            //    hierarchy.Add(employee);
-            //}
-
-            // Return the hierarchy.
-            return Ok();
+                while (sup != null)
+                {
+                  
+                    if (sup == employees.EmployeeId) break;
+                    var emp2 = _db.Employees.Where(e => e.EmployeeId == sup).FirstOrDefault();
+                    hierarchy.Add(emp2.EmployeeName);
+                    ids.Add(emp2.EmployeeId);
+                    sup = (int)emp2.SupervisorId;
+                }
+                                
+                if (hierarchy == null)
+                {
+                    return BadRequest();
+                }
+                return Ok(hierarchy);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
     }
