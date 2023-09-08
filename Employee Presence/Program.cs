@@ -1,4 +1,7 @@
+using Emp.DAL.Repository;
+using Emp.DAL.Repository.IRepository;
 using Employee_Presence.Data;
+using Employee_Presence.Model;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -15,6 +18,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlSer
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IRepository<Employee>, EmployeeRepo<Employee>>();
 
 var app = builder.Build();
 
