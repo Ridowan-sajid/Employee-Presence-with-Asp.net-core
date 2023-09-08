@@ -106,9 +106,10 @@ namespace Employee_Presence.Controllers
             try
             {
                 var employees = _db.Employees
-                .OrderByDescending(e => e.EmployeeSalary)
                 .Where(e => e.EmployeeAttendances.Any(a => a.IsAbsent == 0)).Distinct()
+                .OrderByDescending(e => e.EmployeeSalary)
                 .ToList();
+
                 if (employees == null)
                 {
                     return BadRequest();
