@@ -1,12 +1,11 @@
 ﻿using Emp.DAL.Repository.IRepository;
-using Employee_Presence.Data;
+using Emp.Model.Model.Dto;
 using Employee_Presence.Model;
 using Employee_Presence.Model.Dto;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Collections;
-using System.Linq;
-using System.Net;
+
 
 namespace Employee_Presence.Controllers
 {
@@ -14,23 +13,84 @@ namespace Employee_Presence.Controllers
     [ApiController]
     public class EmployeeController : ControllerBase
     {
-        private readonly ApplicationDbContext _db;
         private readonly IRepository<Employee> _context;
 
-        public EmployeeController(ApplicationDbContext db, IRepository<Employee> context)
+        public EmployeeController(IRepository<Employee> context)
         {
-            _db = db;
             _context=context;
 
         }
-        [HttpGet]
+
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<bool> CreateEmployee([FromForm]EmployeeDTO data)
+        {
+            try
+            {
+
+                var employee = _context.CreateEmployee(data);
+                if (employee == null)
+                {
+                    return BadRequest();
+                }
+                return Ok(employee);
+
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+             
+        }
+
+
+        [HttpPost("login")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<string> LoginEmployee([FromForm] LoginDTO data)
+        {
+            try
+            {
+                var employee = _context.LoginEmployee(data);
+                if (employee == null)
+                {
+                    return BadRequest("Enter correct name and password");
+                }
+                return Ok(employee);
+
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        
+
+
+        [HttpGet,Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<EmployeeDTO>> GetEmployee()
         {
-            return _context.GetEmployee().ToList();
+            try
+            {
+
+                var employee = _context.GetEmployee().ToList();
+                if (employee == null)
+                {
+                    return BadRequest();
+                }
+                return Ok(employee);
+
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            
         }
 
-        [HttpPut("{id:int}")]
+        [HttpPut("{id:int}"),Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult UpdateEmployee(int id,[FromBody] EmployeeUpdateDTO updateDTO)
@@ -53,7 +113,7 @@ namespace Employee_Presence.Controllers
             
         }
 
-        [HttpGet("GetEmployeeThird")]
+        [HttpGet("GetEmployeeThird"),Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult<EmployeeDTO> GetEmployee3rd()
@@ -77,7 +137,7 @@ namespace Employee_Presence.Controllers
             
         }
 
-        [HttpGet("HighestSalary")]
+        [HttpGet("HighestSalary"),Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult<IEnumerable<EmployeeDTO>> HighestSalary()
@@ -104,7 +164,7 @@ namespace Employee_Presence.Controllers
         }
 
 
-        [HttpGet("GetMonthlyAttendance")]
+        [HttpGet("GetMonthlyAttendance"),Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult<IEnumerable<EmployeeDTO>> MonthlyAttendance()
@@ -124,7 +184,7 @@ namespace Employee_Presence.Controllers
             
         }
 
-        [HttpGet("GetHierarchy/{EmployeeId:int}")]
+        [HttpGet("GetHierarchy/{EmployeeId:int}"),Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult<IEnumerable> GetHierarchy(int EmployeeId)

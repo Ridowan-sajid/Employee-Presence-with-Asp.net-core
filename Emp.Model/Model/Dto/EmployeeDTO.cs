@@ -11,13 +11,13 @@ namespace Employee_Presence.Model.Dto
         [Required]
         public string EmployeeName { get; set; }
         [Required]
+        public string Password { get; set; }
+        [Required]
         public string EmployeeCode { get; set; }
         [Required]
         public double EmployeeSalary { get; set; }
 
         public int? SupervisorId { get; set; }
-        public Employee? Supervisor { get; set; }
-        public ICollection<EmployeeAttendance>? EmployeeAttendances { get; set; }
 
     }
 }

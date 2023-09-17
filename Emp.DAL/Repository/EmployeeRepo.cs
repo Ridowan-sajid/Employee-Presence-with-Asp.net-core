@@ -1,28 +1,31 @@
 ﻿using AutoMapper;
 using Emp.DAL.Repository.IRepository;
+using Emp.Model.Model.Dto;
 using Employee_Presence.Data;
 using Employee_Presence.Model;
 using Employee_Presence.Model.Dto;
 using Microsoft.EntityFrameworkCore;
-using System;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Emp.DAL.Repository
 {
-    public class EmployeeRepo<T> : IRepository<T> where T : class
+    public class EmployeeRepo: IRepository<Employee>
     {
         private readonly ApplicationDbContext _db;
-        public EmployeeRepo(ApplicationDbContext db)
+        private readonly IConfiguration _configuration;
+        public EmployeeRepo(ApplicationDbContext db,IConfiguration configuration)
         {
             _db=db;
+            _configuration=configuration;
         }
         public IEnumerable<EmployeeDTO> GetEmployee()
         {
+
             IEnumerable<Employee> res = _db.Employees.ToList();
             var cfg = new MapperConfiguration(c =>
             {
@@ -97,7 +100,7 @@ namespace Emp.DAL.Repository
             return hierarchy;
         }
 
-        public Employee UpdateEmployee(int id, EmployeeUpdateDTO updateDTO)
+        public EmployeeDTO UpdateEmployee(int id, EmployeeUpdateDTO updateDTO)
         {
             List<Employee> empList = _db.Employees.Where(e => e.EmployeeCode == updateDTO.EmployeeCode && e.EmployeeId != id).ToList();
             if (updateDTO != null && empList.Count == 0)
@@ -108,14 +111,15 @@ namespace Emp.DAL.Repository
                     emp.EmployeeName = updateDTO.EmployeeName;
                     emp.EmployeeCode = updateDTO.EmployeeCode;
 
+                    _db.Employees.Update(emp);
+                    _db.SaveChanges();
+
                     var cfg = new MapperConfiguration(c =>
                     {
-                        c.CreateMap<EmployeeDTO, Employee>();
+                        c.CreateMap<Employee, EmployeeDTO>();
                     });
                     var mapper = new Mapper(cfg);
-                    var mapped = mapper.Map<Employee>(emp);
-                    _db.Employees.Update(mapped);
-                    _db.SaveChanges();
+                    var mapped = mapper.Map<EmployeeDTO>(emp);
                     return mapped;
                 }
                 return null;
@@ -125,5 +129,67 @@ namespace Emp.DAL.Repository
                 return null;
             }
         }
+
+        public bool CreateEmployee(EmployeeDTO data)
+        {
+            
+            if (data != null)
+            {
+                data.Password = BCrypt.Net.BCrypt.HashPassword(data.Password);
+                var cfg = new MapperConfiguration(c =>
+                {
+                    c.CreateMap<EmployeeDTO, Employee>();
+                });
+                var mapper = new Mapper(cfg);
+                var mapped = mapper.Map<Employee>(data);
+                
+                _db.Employees.Add(mapped);
+                _db.SaveChanges();
+                return true;
+            }
+            return false;
+        }
+
+        public string LoginEmployee(LoginDTO data)
+        {
+            if (data != null)
+            {
+                Employee employee = _db.Employees.Where(e => e.EmployeeName.Equals(data.EmployeeName)).FirstOrDefault();
+                if (employee!=null)
+                {
+                    if(BCrypt.Net.BCrypt.Verify(data.Password, employee.Password))
+                    {
+                        string token=CreateToken(employee);
+                        return token;
+                    }
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        private string CreateToken(Employee emp)
+        {
+            List<Claim> claims = new List<Claim>()
+            {
+                new Claim(ClaimTypes.Name,emp.EmployeeName)
+            };
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("AppSettings:Token").Value!));
+            var cred = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+            var token = new JwtSecurityToken(
+                claims:claims,
+                expires:DateTime.Now.AddDays(1),
+                signingCredentials:cred
+                );
+            var jwt = new JwtSecurityTokenHandler().WriteToken(token);
+
+            return jwt;
+        }
+
+       
     }
+
+
+
+
 }

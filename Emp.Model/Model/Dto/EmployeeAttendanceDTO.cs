@@ -14,8 +14,7 @@ namespace Employee_Presence.Model.Dto
         public int IsAbsent { get; set; }
         public int IsOffDay { get; set; }
 
-        public int? EmployeeId { get; set; }
-        [ForeignKey("EmployeeId")]
-        public Employee? Employee { get; set; }
+        public int EmployeeId { get; set; }
+
     }
 }

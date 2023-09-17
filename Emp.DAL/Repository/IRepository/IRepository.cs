@@ -1,4 +1,5 @@
-﻿using Employee_Presence.Model;
+﻿using Emp.Model.Model.Dto;
+using Employee_Presence.Model;
 using Employee_Presence.Model.Dto;
 using System;
 using System.Collections;
@@ -9,10 +10,12 @@ using System.Threading.Tasks;
 
 namespace Emp.DAL.Repository.IRepository
 {
-    public interface IRepository<T> where T: class
+    public interface IRepository<T> where T : class
     {
+        bool CreateEmployee(EmployeeDTO data);
+        string LoginEmployee(LoginDTO data);
         IEnumerable<EmployeeDTO> GetEmployee();
-        Employee UpdateEmployee(int id, EmployeeUpdateDTO updateDTO);
+        EmployeeDTO UpdateEmployee(int id, EmployeeUpdateDTO updateDTO);
         EmployeeDTO GetEmployee3rd();
         IEnumerable<EmployeeDTO> HighestSalary();
         IEnumerable<object> MonthlyAttendance();

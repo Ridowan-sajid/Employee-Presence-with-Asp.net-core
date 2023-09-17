@@ -12,6 +12,8 @@ namespace Employee_Presence.Model
         [StringLength(20)]
         public string EmployeeName { get; set; }
         [Required]
+        public string Password { get; set; }
+        [Required]
         
         public string EmployeeCode { get; set; }
         [Required]
